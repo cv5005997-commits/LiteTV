@@ -44,6 +44,17 @@ jobs:
         run: sed -n '1,220p' app/src/main/java/com/litetv/app/PlayerEngine.kt
         working-directory: source/LiteTV
 
+      - name: Fix PlayerEngine initialization
+        run: |
+          FILE=app/src/main/java/com/litetv/app/PlayerEngine.kt
+          if ! grep -Fq 'private val player: ExoPlayer' "$FILE"; then
+            echo "::error::No se encontró la declaración esperada de player en PlayerEngine.kt"
+            exit 1
+          fi
+          sed -i 's/private val player: ExoPlayer/private lateinit var player: ExoPlayer/' "$FILE"
+          grep -n 'player: ExoPlayer' "$FILE"
+        working-directory: source/LiteTV
+
       - name: Build debug APK
         run: gradle --no-daemon --stacktrace clean assembleDebug
         working-directory: source/LiteTV
