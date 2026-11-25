@@ -1,0 +1,45 @@
+name: Publish LiteTV Release
+
+on:
+  push:
+    paths:
+      - '.github/workflows/publish.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download verified APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: LiteTV-debug-apk
+          path: release-files
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: 45709917044
+
+      - name: Verify APK
+        id: apk
+        shell: bash
+        run: |
+          APK="$(find release-files -type f -name '*.apk' -print -quit)"
+          if [ -z "$APK" ]; then
+            echo "::error::No se encontró ningún APK en el artefacto verificado."
+            find release-files -type f -maxdepth 5 -print
+            exit 1
+          fi
+          echo "path=$APK" >> "$GITHUB_OUTPUT"
+          ls -lh "$APK"
+
+      - name: Create GitHub Release and upload APK
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create v1.0.0 "${{ steps.apk.outputs.path }}" \
+            --title "LiteTV v1.0.0" \
+            --notes "Primera versión compilada correctamente de LiteTV. APK debug generado y verificado mediante GitHub Actions."
